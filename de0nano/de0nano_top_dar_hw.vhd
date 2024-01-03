@@ -13,7 +13,7 @@ entity de0nano_top is
 		CLOCK_50		: IN STD_LOGIC;
 		KEY			: IN STD_LOGIC_VECTOR(1 DOWNTO 0);
 		SW				: IN STD_LOGIC_VECTOR(3 DOWNTO 0);
-		LED			: OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
+		LED			: OUT STD_LOGIC_VECTOR(7 DOWNTO 0) := (others=>'0');
 
 		DRAM_CLK		: OUT STD_LOGIC;
 		DRAM_CKE		: OUT STD_LOGIC;
@@ -43,9 +43,9 @@ entity de0nano_top is
 		ADC_SCLK		: OUT STD_LOGIC;
 		ADC_SDAT		: IN STD_LOGIC;
 
-		GPIO_0		: INOUT STD_LOGIC_VECTOR(33 DOWNTO 0);
-		GPIO_1		: INOUT STD_LOGIC_VECTOR(33 DOWNTO 0);
-		GPIO_2		: INOUT STD_LOGIC_VECTOR(12 DOWNTO 0);
+		GPIO_0		: INOUT STD_LOGIC_VECTOR(33 DOWNTO 0) := (others => 'Z');
+		GPIO_1		: INOUT STD_LOGIC_VECTOR(33 DOWNTO 0) := (others => 'Z');
+		GPIO_2		: INOUT STD_LOGIC_VECTOR(12 DOWNTO 0) := (others => 'Z');
 		GPIO_0_IN	: IN STD_LOGIC_VECTOR(1 DOWNTO 0);
 		GPIO_1_IN	: IN STD_LOGIC_VECTOR(1 DOWNTO 0);
 		GPIO_2_IN	: IN STD_LOGIC_VECTOR(2 DOWNTO 0)
@@ -83,8 +83,8 @@ architecture RTL of de0nano_top is
 	signal spi_clk_int : std_logic;
 
 -- PS/2 Keyboard socket - used for second mouse
-	alias ps2_keyboard_clk : std_logic is GPIO_1(33); -- Dar
-	alias ps2_keyboard_dat : std_logic is GPIO_1(32); -- Dar
+	alias ps2_keyboard_clk : std_logic is GPIO_1(29); -- Dar
+	alias ps2_keyboard_dat : std_logic is GPIO_1(27); -- Dar
 
 	signal ps2_keyboard_clk_in : std_logic;
 	signal ps2_keyboard_dat_in : std_logic;
@@ -92,8 +92,8 @@ architecture RTL of de0nano_top is
 	signal ps2_keyboard_dat_out : std_logic;
 
 -- PS/2 Mouse
-	signal ps2_mouse_clk : std_logic;
-	signal ps2_mouse_dat : std_logic;
+	alias ps2_mouse_clk : std_logic is GPIO_1(33); -- Dar
+	alias ps2_mouse_dat : std_logic is GPIO_1(31); -- Dar
 
 	signal ps2_mouse_clk_in: std_logic;
 	signal ps2_mouse_dat_in: std_logic;
@@ -113,15 +113,15 @@ architecture RTL of de0nano_top is
 	signal rs232_rxd : std_logic;
 	signal rs232_txd : std_logic;
 
-	alias sigma_l : std_logic is GPIO_1(0); -- Dar
-	alias sigma_r : std_logic is GPIO_1(1); -- Dar
+	signal sigma_l : std_logic;
+	signal sigma_r : std_logic;
 	
 -- IO
 
-	signal joya : std_logic_vector(6 downto 0);
-	signal joyb : std_logic_vector(6 downto 0);
-	signal joyc : std_logic_vector(6 downto 0);
-	signal joyd : std_logic_vector(6 downto 0);
+	signal joya : std_logic_vector(7 downto 0);
+	signal joyb : std_logic_vector(7 downto 0);
+	signal joyc : std_logic_vector(7 downto 0);
+	signal joyd : std_logic_vector(7 downto 0);
 
 	signal uart_rxd : std_logic;
 	signal uart_txd : std_logic;
@@ -138,18 +138,20 @@ architecture RTL of de0nano_top is
 
 begin
 
--- Dar
-GPIO_0(33 downto  0) <= (others => 'Z');
-GPIO_1(31 downto 22) <= (others => 'Z');
-GPIO_1(12 downto  0) <= (others => 'Z');
+--JOYSTICK
+joya <= "111" & GPIO_1_IN(1) & GPIO_1_IN(0) & GPIO_1(6) & GPIO_1(8) & GPIO_1(10);     -- Dar
+joyb <= "111" & GPIO_1(12) & GPIO_1(14) & GPIO_1(16) & GPIO_1(18) & GPIO_1(20); -- Dar
+
+-- AUDIO
+GPIO_1(2) <= sigma_l; -- Dar
+GPIO_1(4) <= sigma_l; -- Dar
 
 -- SPI
-
-GPIO_1(16)<=sd_cs;   -- Dar
-GPIO_1(17)<=sd_mosi; -- Dar
-GPIO_1(19)<='Z';     -- Dar
-sd_miso<=GPIO_1(19); -- Dar
-GPIO_1(18)<=sd_clk;  -- Dar
+GPIO_1(28)<=sd_cs;   -- Dar
+GPIO_1(26)<=sd_mosi; -- Dar
+GPIO_1(24)<='Z';     -- Dar
+sd_miso<=GPIO_1(24); -- Dar
+GPIO_1(32)<=sd_clk;  -- Dar
 
 -- PCXT serial
 --GPIO_1(20) <= uart_txd;  -- Dar
@@ -157,9 +159,9 @@ GPIO_1(18)<=sd_clk;  -- Dar
 --uart_rxd <= GPIO_1(21);  -- Dar
 
 -- MCU serial
-GPIO_1(20) <= rs232_txd;
-GPIO_1(21) <= 'Z';
-rs232_rxd <= GPIO_1(21);
+GPIO_0(2) <= rs232_txd;
+GPIO_0(3) <= 'Z';
+rs232_rxd <= GPIO_0(3);
 
 
 --GPIO_1(22) <= uart_rts;  -- Dar
@@ -178,16 +180,21 @@ ps2_keyboard_dat <= '0' when ps2_keyboard_dat_out='0' else 'Z';
 ps2_keyboard_clk_in<=ps2_keyboard_clk;
 ps2_keyboard_clk <= '0' when ps2_keyboard_clk_out='0' else 'Z';
 
-joya<=(others=>'1');
-joyb<=(others=>'1');
-joyc<=(others=>'1');
-joyd<=(others=>'1');
+GPIO_1(25) <= vga_red(7); -- Dar
+GPIO_1(23) <= vga_red(6); -- Dar
+GPIO_1(21) <= vga_red(5); -- Dar
+GPIO_1(19) <= vga_red(4); -- Dar
+GPIO_1(17) <= vga_green(7); -- Dar
+GPIO_1(15) <= vga_green(6); -- Dar
+GPIO_1(13) <= vga_green(5); -- Dar
+GPIO_1(11) <= vga_green(4); -- Dar
+GPIO_1(9) <= vga_blue(7); -- Dar
+GPIO_1(7) <= vga_blue(6); -- Dar
+GPIO_1(5) <= vga_blue(5); -- Dar
+GPIO_1(3) <= vga_blue(4); -- Dar
+GPIO_1(1)<=vga_hsync;								-- Dar
+GPIO_1(0)<=vga_vsync;								-- Dar
 
-GPIO_1( 7 downto  4)<=vga_red(7 downto 4);	-- Dar
-GPIO_1(11 downto  8)<=vga_green(7 downto 4);	-- Dar
-GPIO_1(15 downto 12)<=vga_blue(7 downto 4);	-- Dar
-GPIO_1(3)<=vga_hsync;								-- Dar
-GPIO_1(2)<=vga_vsync;								-- Dar
 
 -- Generate clocks
 
@@ -197,6 +204,7 @@ guest: entity work.c64_mist
 --		CLOCK_27 => CLOCK_50&CLOCK_50, -- Comment out one of these lines to match the guest core.
 		CLOCK_27 => CLOCK_50,
 --		RESET_N => reset_n,
+		LED => LED(0),
 		-- clocks
 		SDRAM_DQ => DRAM_DQ,
 		SDRAM_A => DRAM_ADDR,
@@ -275,6 +283,8 @@ controller : entity work.substitute_mcu
 		ps2m_clk_out => ps2_mouse_clk_out,
 		ps2m_dat_out => ps2_mouse_dat_out,
 
+		joy1 => joya,
+		joy2 => joyb,
 		buttons => (0=>KEY(1),others=>'1'),
 
 		-- UART
@@ -283,7 +293,6 @@ controller : entity work.substitute_mcu
 		intercept => intercept
 );
 
-LED 				<= (others=>'0');
 I2C_SCLK			<= '0';
 I2C_SDAT			<= 'Z';
 G_SENSOR_CS_N	<= '1';
